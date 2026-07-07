@@ -1,0 +1,804 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>BloomJobs</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=Playfair+Display:wght@700&display=swap" rel="stylesheet"/>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --pink:#F472B6;--pink-light:#FDF2F8;--pink-mid:#FBCFE8;
+  --purple:#A855F7;--purple-light:#F5F3FF;--purple-mid:#DDD6FE;
+  --teal:#14B8A6;--bg:#FFF5FB;--card:#fff;--text:#1E1B2E;--muted:#6B6B8A;
+  --border:#F0D9F0;--radius:16px;
+  --err:#EF4444;--err-bg:#FFF1F2;--err-border:#FECDD3;
+  --weak:#EF4444;--fair:#F59E0B;--good:#3B82F6;--strong:#10B981;
+}
+body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;overflow-x:hidden}
+.blob-bg{position:fixed;inset:0;z-index:0;pointer-events:none;overflow:hidden}
+.blob{position:absolute;border-radius:50%;filter:blur(80px);opacity:.18}
+.blob1{width:500px;height:500px;background:#F472B6;top:-100px;left:-100px}
+.blob2{width:400px;height:400px;background:#A855F7;bottom:0;right:-80px}
+.blob3{width:300px;height:300px;background:#14B8A6;top:40%;left:50%;transform:translateX(-50%)}
+#app{position:relative;z-index:1;min-height:100vh}
+nav{display:flex;align-items:center;justify-content:space-between;padding:18px 40px;background:rgba(255,255,255,.75);backdrop-filter:blur(16px);border-bottom:1px solid var(--border);position:sticky;top:0;z-index:100}
+.logo{font-family:'Playfair Display',serif;font-size:22px;background:linear-gradient(135deg,var(--pink),var(--purple));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.logo span{font-size:14px;font-family:'DM Sans',sans-serif;font-weight:400;display:block;-webkit-text-fill-color:#A855F7;margin-top:-4px}
+.nav-actions{display:flex;gap:10px;align-items:center}
+.btn{padding:9px 20px;border-radius:50px;font-family:'DM Sans',sans-serif;font-size:14px;font-weight:500;cursor:pointer;border:none;transition:all .2s}
+.btn-outline{background:transparent;border:1.5px solid var(--pink);color:var(--pink)}
+.btn-outline:hover{background:var(--pink-light)}
+.btn-primary{background:linear-gradient(135deg,var(--pink),var(--purple));color:#fff;box-shadow:0 4px 14px rgba(168,85,247,.3)}
+.btn-primary:hover{transform:translateY(-1px);box-shadow:0 6px 20px rgba(168,85,247,.4)}
+.btn-primary:disabled{opacity:.5;cursor:not-allowed;transform:none}
+.btn-sm{padding:7px 16px;font-size:13px}
+.badge{display:inline-block;padding:4px 12px;border-radius:50px;font-size:12px;font-weight:500}
+.badge-pink{background:var(--pink-mid);color:#9D174D}
+.badge-purple{background:var(--purple-mid);color:#5B21B6}
+.badge-teal{background:#CCFBF1;color:#0F766E}
+.badge-amber{background:#FEF3C7;color:#92400E}
+.page{display:none;padding:40px}
+.page.active{display:block}
+.auth-wrap{max-width:460px;margin:50px auto}
+.auth-card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:36px}
+.card-title{font-family:'Playfair Display',serif;font-size:24px;margin-bottom:6px}
+.card-sub{color:var(--muted);font-size:14px;margin-bottom:28px}
+.field-group{margin-bottom:16px}
+.field-group label{font-size:13px;font-weight:500;color:var(--muted);display:block;margin-bottom:6px}
+.input-wrap{position:relative}
+.input-wrap input{width:100%;padding:11px 40px 11px 16px;border:1.5px solid var(--border);border-radius:10px;font-family:'DM Sans',sans-serif;font-size:14px;color:var(--text);background:#fff;transition:border .2s;outline:none}
+.input-wrap input:focus{border-color:var(--pink)}
+.pw-toggle{position:absolute;right:12px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;font-size:16px;color:var(--muted)}
+.pw-strength-bar{display:flex;gap:4px;margin-top:8px}
+.pw-bar-seg{height:4px;border-radius:4px;flex:1;background:#E5E7EB;transition:background .3s}
+.pw-label{font-size:12px;font-weight:500;margin-top:6px;min-height:16px}
+.pw-rules{margin-top:10px;margin-bottom:4px}
+.pw-rule{font-size:12px;color:var(--muted);display:flex;align-items:center;gap:6px;line-height:2}
+.pw-rule.ok{color:#10B981}
+.pw-rule::before{content:'·';font-size:18px;line-height:1}
+.pw-rule.ok::before{content:'✓';font-size:12px}
+.form-banner{padding:10px 14px;border-radius:8px;font-size:13px;margin-bottom:16px;display:none;align-items:center;gap:8px}
+.form-banner.err{background:var(--err-bg);border:1px solid var(--err-border);color:#B91C1C;display:flex}
+.form-banner.success{background:#D1FAE5;border:1px solid #6EE7B7;color:#065F46;display:flex}
+.auth-switch{text-align:center;margin-top:20px;font-size:14px;color:var(--muted)}
+.auth-switch a{color:var(--purple);cursor:pointer;font-weight:500}
+.hero{text-align:center;padding:70px 20px 50px}
+.hero h1{font-family:'Playfair Display',serif;font-size:52px;line-height:1.15;margin-bottom:16px}
+.hero h1 span{background:linear-gradient(135deg,var(--pink),var(--purple));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.hero p{font-size:17px;color:var(--muted);max-width:500px;margin:0 auto 36px}
+.search-bar{display:flex;max-width:620px;margin:0 auto;background:#fff;border:1.5px solid var(--border);border-radius:50px;padding:6px 6px 6px 22px;box-shadow:0 8px 30px rgba(168,85,247,.1)}
+.search-bar input{border:none;background:transparent;flex:1;font-size:15px;outline:none}
+.search-bar input::placeholder{color:var(--muted)}
+.tags{display:flex;justify-content:center;gap:8px;flex-wrap:wrap;margin-top:24px}
+.tag{padding:6px 16px;border-radius:50px;background:#fff;border:1.5px solid var(--border);font-size:13px;color:var(--muted);cursor:pointer;transition:all .2s}
+.tag:hover,.tag.active{border-color:var(--pink);color:var(--pink);background:var(--pink-light)}
+.section-title{font-family:'Playfair Display',serif;font-size:26px;margin-bottom:4px}
+.section-sub{color:var(--muted);font-size:14px;margin-bottom:28px}
+.filters{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:28px}
+.filter-select{padding:8px 16px;border-radius:50px;border:1.5px solid var(--border);font-size:13px;background:#fff;color:var(--text);cursor:pointer;outline:none}
+.jobs-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:20px}
+.job-card{background:var(--card);border:1.5px solid var(--border);border-radius:var(--radius);padding:24px;cursor:pointer;transition:all .25s;position:relative}
+.job-card:hover{border-color:var(--pink-mid);transform:translateY(-3px);box-shadow:0 12px 30px rgba(244,114,182,.15)}
+.job-logo{width:44px;height:44px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:20px;background:var(--pink-light);flex-shrink:0}
+.job-title{font-weight:600;font-size:16px;margin-bottom:3px}
+.job-company{font-size:13px;color:var(--muted)}
+.job-meta{display:flex;gap:8px;flex-wrap:wrap;margin:12px 0;font-size:12px;color:var(--muted)}
+.save-btn{position:absolute;top:16px;right:16px;background:none;border:none;font-size:20px;cursor:pointer;transition:.2s}
+.save-btn:hover{transform:scale(1.15)}
+.empty{text-align:center;padding:80px 20px;color:var(--muted)}
+.empty-icon{font-size:56px;margin-bottom:16px}
+.back-btn{display:flex;align-items:center;gap:6px;color:var(--purple);cursor:pointer;font-size:14px;font-weight:500;margin-bottom:24px;background:none;border:none}
+.detail-header{background:var(--card);border:1.5px solid var(--border);border-radius:var(--radius);padding:28px;margin-bottom:20px}
+.detail-title{font-family:'Playfair Display',serif;font-size:28px;margin-bottom:6px}
+.detail-actions{display:flex;gap:10px;margin-top:20px;flex-wrap:wrap}
+.detail-body{display:grid;grid-template-columns:1fr 300px;gap:20px}
+.detail-main{background:var(--card);border:1.5px solid var(--border);border-radius:var(--radius);padding:28px}
+.detail-side{display:flex;flex-direction:column;gap:16px}
+.side-card{background:var(--card);border:1.5px solid var(--border);border-radius:var(--radius);padding:20px}
+.side-card h4{font-weight:600;font-size:14px;margin-bottom:12px}
+.side-row{display:flex;justify-content:space-between;font-size:13px;padding:6px 0;border-bottom:1px solid var(--border)}
+.side-row:last-child{border:none}
+.side-row span:first-child{color:var(--muted)}
+.desc-h{font-size:16px;font-weight:600;margin:20px 0 10px}
+.desc-h:first-child{margin-top:0}
+.desc-ul{padding-left:20px;font-size:14px;line-height:1.9;color:var(--muted)}
+.desc-p{font-size:14px;line-height:1.85;color:var(--muted);margin-bottom:10px}
+.stats-row{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:32px}
+.stat-card{background:var(--card);border:1.5px solid var(--border);border-radius:var(--radius);padding:22px;text-align:center}
+.stat-num{font-family:'Playfair Display',serif;font-size:36px;background:linear-gradient(135deg,var(--pink),var(--purple));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.stat-label{font-size:13px;color:var(--muted);margin-top:4px}
+.applied-list{display:flex;flex-direction:column;gap:14px}
+.applied-item{background:var(--card);border:1.5px solid var(--border);border-radius:var(--radius);padding:20px;display:flex;align-items:center;gap:16px;cursor:pointer;transition:.2s}
+.applied-item:hover{border-color:var(--pink-mid)}
+.status-pill{padding:5px 14px;border-radius:50px;font-size:12px;font-weight:500;white-space:nowrap}
+.status-applied{background:#FDF2F8;color:#9D174D}
+.status-saved{background:#F0FDFA;color:#0F766E}
+.modal-overlay{position:fixed;inset:0;background:rgba(30,27,46,.5);z-index:300;display:flex;align-items:center;justify-content:center;padding:16px}
+.modal-box{background:#fff;border-radius:20px;width:620px;max-width:100%;max-height:90vh;display:flex;flex-direction:column;overflow:hidden;box-shadow:0 24px 60px rgba(168,85,247,.18)}
+.modal-head{padding:28px 32px 20px;border-bottom:1px solid var(--border);flex-shrink:0}
+.modal-head-top{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
+.modal-job-info{display:flex;align-items:center;gap:12px}
+.modal-job-logo{width:44px;height:44px;border-radius:12px;background:var(--pink-light);display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0}
+.modal-job-title{font-family:'Playfair Display',serif;font-size:18px;margin-bottom:2px}
+.modal-job-co{font-size:13px;color:var(--muted)}
+.modal-close{background:none;border:none;font-size:22px;cursor:pointer;color:var(--muted);line-height:1;padding:4px;flex-shrink:0}
+.modal-close:hover{color:var(--text)}
+.step-bar{display:flex;align-items:center;margin-top:20px}
+.step-item{display:flex;align-items:center;gap:6px;font-size:12px;font-weight:500}
+.step-circle{width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600;flex-shrink:0;transition:all .3s}
+.step-circle.done{background:linear-gradient(135deg,var(--pink),var(--purple));color:#fff}
+.step-circle.active{background:var(--purple-mid);color:var(--purple);border:2px solid var(--purple)}
+.step-circle.idle{background:#F3F4F6;color:#9CA3AF;border:2px solid #E5E7EB}
+.step-label{color:var(--muted)}
+.step-label.active{color:var(--purple);font-weight:600}
+.step-line{flex:1;height:2px;background:#E5E7EB;margin:0 6px}
+.step-line.done{background:linear-gradient(90deg,var(--pink),var(--purple))}
+.modal-body{flex:1;overflow-y:auto;padding:28px 32px}
+.modal-foot{padding:18px 32px;border-top:1px solid var(--border);display:flex;gap:10px;justify-content:flex-end;flex-shrink:0;background:#fff}
+.mfield{margin-bottom:20px}
+.mfield label{font-size:13px;font-weight:500;color:var(--muted);display:block;margin-bottom:7px}
+.mfield label .req{color:var(--pink);margin-left:2px}
+.mfield label .opt{font-size:11px;color:#9CA3AF;font-weight:400;margin-left:4px}
+.mfield input,.mfield select,.mfield textarea{width:100%;padding:11px 14px;border:1.5px solid var(--border);border-radius:10px;font-family:'DM Sans',sans-serif;font-size:14px;color:var(--text);background:#fff;outline:none;transition:border .2s,box-shadow .2s}
+.mfield input:focus,.mfield select:focus,.mfield textarea:focus{border-color:var(--pink);box-shadow:0 0 0 3px rgba(244,114,182,.1)}
+.mfield input.err,.mfield select.err,.mfield textarea.err{border-color:var(--err);box-shadow:0 0 0 3px rgba(239,68,68,.08)}
+.mfield textarea{resize:vertical;min-height:80px}
+.mfield-err{font-size:12px;color:var(--err);margin-top:5px;display:none;align-items:center;gap:4px}
+.mfield-err.show{display:flex}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.file-drop{border:2px dashed var(--border);border-radius:12px;padding:24px;text-align:center;cursor:pointer;transition:all .2s;position:relative}
+.file-drop:hover,.file-drop.drag{border-color:var(--pink);background:var(--pink-light)}
+.file-drop input[type=file]{position:absolute;inset:0;opacity:0;cursor:pointer}
+.file-drop .fd-icon{font-size:32px;margin-bottom:8px}
+.file-drop .fd-text{font-size:13px;color:var(--muted)}
+.file-drop .fd-text b{color:var(--purple)}
+.file-drop .fd-hint{font-size:11px;color:#9CA3AF;margin-top:4px}
+.file-chosen{display:flex;align-items:center;gap:10px;padding:10px 14px;background:var(--purple-light);border:1.5px solid var(--purple-mid);border-radius:10px;margin-top:10px}
+.file-chosen span{flex:1;font-size:13px;color:var(--purple);font-weight:500}
+.file-chosen button{background:none;border:none;cursor:pointer;color:var(--muted);font-size:16px}
+.file-drop.err-border{border-color:var(--err)}
+.skills-input-wrap{position:relative}
+.skills-input-wrap input{padding-right:90px}
+.skills-add-btn{position:absolute;right:8px;top:50%;transform:translateY(-50%);padding:5px 14px;background:linear-gradient(135deg,var(--pink),var(--purple));color:#fff;border:none;border-radius:50px;font-size:12px;font-weight:500;cursor:pointer}
+.skills-chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px;min-height:10px}
+.skill-chip{display:flex;align-items:center;gap:5px;background:var(--purple-light);border:1px solid var(--purple-mid);color:#5B21B6;padding:5px 12px;border-radius:50px;font-size:12px;font-weight:500}
+.skill-chip button{background:none;border:none;cursor:pointer;color:#7C3AED;font-size:14px;line-height:1;padding:0}
+.success-screen{text-align:center;padding:40px 20px}
+.success-screen .s-icon{font-size:64px;margin-bottom:16px;animation:popIn .5s ease}
+@keyframes popIn{0%{transform:scale(.4);opacity:0}80%{transform:scale(1.1)}100%{transform:scale(1);opacity:1}}
+.success-screen h2{font-family:'Playfair Display',serif;font-size:26px;margin-bottom:10px}
+.success-screen p{font-size:14px;color:var(--muted);max-width:360px;margin:0 auto 28px}
+.success-detail{background:var(--pink-light);border:1px solid var(--pink-mid);border-radius:12px;padding:16px 20px;text-align:left;margin-bottom:24px}
+.success-detail .sd-row{display:flex;justify-content:space-between;font-size:13px;padding:5px 0;border-bottom:1px solid var(--pink-mid)}
+.success-detail .sd-row:last-child{border:none}
+.success-detail .sd-row span:first-child{color:var(--muted)}
+.success-detail .sd-row span:last-child{font-weight:500;color:var(--text)}
+.nav-link{font-size:14px;color:var(--muted);cursor:pointer;padding:8px 14px;border-radius:50px;transition:.2s}
+.nav-link:hover{background:var(--pink-light);color:var(--pink)}
+.user-chip{display:flex;align-items:center;gap:8px;padding:6px 14px;background:var(--pink-light);border-radius:50px;font-size:13px;font-weight:500;color:var(--pink)}
+.toast{position:fixed;bottom:30px;left:50%;transform:translateX(-50%);background:#1E1B2E;color:#fff;padding:12px 24px;border-radius:50px;font-size:14px;font-weight:500;z-index:999;opacity:0;transition:opacity .3s;pointer-events:none;white-space:nowrap}
+.toast.show{opacity:1}
+/* Logout confirm modal */
+.confirm-overlay{position:fixed;inset:0;background:rgba(30,27,46,.5);z-index:400;display:flex;align-items:center;justify-content:center;padding:16px}
+.confirm-box{background:#fff;border-radius:20px;padding:36px;width:380px;max-width:95vw;text-align:center;box-shadow:0 24px 60px rgba(168,85,247,.2)}
+.confirm-icon{font-size:44px;margin-bottom:14px}
+.confirm-title{font-family:'Playfair Display',serif;font-size:20px;margin-bottom:8px}
+.confirm-sub{font-size:14px;color:var(--muted);margin-bottom:28px;line-height:1.6}
+.confirm-actions{display:flex;gap:10px;justify-content:center}
+@media(max-width:700px){
+  nav{padding:14px 18px}.page{padding:24px 18px}.hero h1{font-size:34px}
+  .detail-body,.row2{grid-template-columns:1fr}.stats-row{grid-template-columns:1fr}.jobs-grid{grid-template-columns:1fr}
+  .modal-body{padding:20px}.modal-head{padding:20px}.modal-foot{padding:14px 20px}
+}
+</style>
+</head>
+<body>
+<div class="blob-bg"><div class="blob blob1"></div><div class="blob blob2"></div><div class="blob blob3"></div></div>
+<div id="app">
+
+<nav>
+  <div class="logo">🌸 BloomJobs<span>Find where you flourish</span></div>
+  <div id="nav-mid" style="display:flex;gap:4px"></div>
+  <div class="nav-actions" id="nav-actions"></div>
+</nav>
+
+<!-- LOGIN -->
+<div class="page" id="page-login">
+  <div class="auth-wrap">
+    <div class="auth-card">
+      <div class="card-title">Welcome back 🌷</div>
+      <div class="card-sub">Sign in to continue your journey</div>
+      <div class="form-banner success" id="login-success">🎉 Account created! Sign in below.</div>
+      <div class="form-banner err" id="login-err"></div>
+      <div class="field-group"><label>Email</label><div class="input-wrap"><input type="email" id="login-email" placeholder="you@example.com"/></div></div>
+      <div class="field-group"><label>Password</label><div class="input-wrap"><input type="password" id="login-pass" placeholder="Your password"/><button class="pw-toggle" onclick="toggleVis('login-pass',this)">👁</button></div></div>
+      <button class="btn btn-primary" style="width:100%;margin-top:4px" onclick="doLogin()">Sign in</button>
+      <div class="auth-switch">Don't have an account? <a onclick="goPage('page-signup')">Sign up</a></div>
+    </div>
+  </div>
+</div>
+
+<!-- SIGNUP -->
+<div class="page" id="page-signup">
+  <div class="auth-wrap">
+    <div class="auth-card">
+      <div class="card-title">Join BloomJobs 🌸</div>
+      <div class="card-sub">Create your account and start exploring</div>
+      <div class="form-banner err" id="reg-err"></div>
+      <div class="field-group"><label>Full name</label><div class="input-wrap"><input type="text" id="reg-name" placeholder="Alex Johnson"/></div></div>
+      <div class="field-group"><label>Email</label><div class="input-wrap"><input type="email" id="reg-email" placeholder="you@example.com"/></div></div>
+      <div class="field-group">
+        <label>Password</label>
+        <div class="input-wrap"><input type="password" id="reg-pass" placeholder="Create a strong password" oninput="evalPw(this.value)"/><button class="pw-toggle" onclick="toggleVis('reg-pass',this)">👁</button></div>
+        <div class="pw-strength-bar" id="pw-bar"><div class="pw-bar-seg" id="b1"></div><div class="pw-bar-seg" id="b2"></div><div class="pw-bar-seg" id="b3"></div><div class="pw-bar-seg" id="b4"></div></div>
+        <div class="pw-label" id="pw-label"></div>
+        <div class="pw-rules">
+          <div class="pw-rule" id="r-len">At least 8 characters</div>
+          <div class="pw-rule" id="r-upper">At least one uppercase letter (A–Z)</div>
+          <div class="pw-rule" id="r-num">At least one number (0–9)</div>
+          <div class="pw-rule" id="r-spec">At least one special character (!@#$…)</div>
+        </div>
+      </div>
+      <button class="btn btn-primary" id="signup-btn" style="width:100%" onclick="doSignup()" disabled>Create account</button>
+      <div class="auth-switch">Already have an account? <a onclick="goPage('page-login')">Sign in</a></div>
+    </div>
+  </div>
+</div>
+
+<!-- HOME -->
+<div class="page" id="page-home">
+  <div class="hero">
+    <div style="display:inline-block;background:var(--pink-mid);color:#9D174D;padding:6px 18px;border-radius:50px;font-size:13px;font-weight:500;margin-bottom:18px">🌺 800+ new roles this week</div>
+    <h1>Find your <span>dream role</span><br/>and let it bloom</h1>
+    <p>Curated jobs and internships from top startups and companies. Your next chapter starts here.</p>
+    <div class="search-bar"><input type="text" id="search-input" placeholder="Search roles, companies, skills…" oninput="filterJobs()"/><button class="btn btn-primary btn-sm" style="border-radius:50px" onclick="filterJobs()">Search</button></div>
+    <div class="tags">
+      <span class="tag" onclick="quickFilter(this,'Design')">🎨 Design</span>
+      <span class="tag" onclick="quickFilter(this,'Engineering')">💻 Engineering</span>
+      <span class="tag" onclick="quickFilter(this,'Marketing')">📣 Marketing</span>
+      <span class="tag" onclick="quickFilter(this,'Data')">📊 Data</span>
+      <span class="tag" onclick="quickFilter(this,'Product')">🧩 Product</span>
+      <span class="tag" onclick="quickFilter(this,'Finance')">💰 Finance</span>
+      <span class="tag" onclick="quickFilter(this,'HR')">🤝 HR</span>
+    </div>
+  </div>
+  <div style="max-width:1100px;margin:0 auto">
+    <div class="section-title">All opportunities</div>
+    <div class="section-sub" id="jobs-count"></div>
+    <div class="filters">
+      <select class="filter-select" id="filter-type" onchange="filterJobs()"><option value="">All types</option><option value="Full-time">Full-time</option><option value="Internship">Internship</option><option value="Part-time">Part-time</option><option value="Contract">Contract</option></select>
+      <select class="filter-select" id="filter-remote" onchange="filterJobs()"><option value="">All locations</option><option value="Remote">Remote</option><option value="Hybrid">Hybrid</option><option value="On-site">On-site</option></select>
+      <select class="filter-select" id="filter-cat" onchange="filterJobs()"><option value="">All categories</option><option value="Engineering">Engineering</option><option value="Design">Design</option><option value="Marketing">Marketing</option><option value="Data">Data</option><option value="Product">Product</option><option value="Finance">Finance</option><option value="HR">HR</option></select>
+    </div>
+    <div class="jobs-grid" id="jobs-grid"></div>
+  </div>
+</div>
+
+<!-- DETAIL -->
+<div class="page" id="page-detail">
+  <div style="max-width:960px;margin:0 auto">
+    <button class="back-btn" onclick="goPage('page-home')">← Back to listings</button>
+    <div id="detail-content"></div>
+  </div>
+</div>
+
+<!-- DASHBOARD -->
+<div class="page" id="page-dashboard">
+  <div style="max-width:900px;margin:0 auto">
+    <div class="section-title">Your dashboard 🌻</div>
+    <div class="section-sub" id="dash-sub"></div>
+    <div class="stats-row">
+      <div class="stat-card"><div class="stat-num" id="stat-applied">0</div><div class="stat-label">Applied</div></div>
+      <div class="stat-card"><div class="stat-num" id="stat-saved">0</div><div class="stat-label">Saved</div></div>
+      <div class="stat-card"><div class="stat-num" id="stat-total">0</div><div class="stat-label">Total listings</div></div>
+    </div>
+    <div class="section-title" style="font-size:20px;margin-bottom:16px">Applied jobs</div>
+    <div class="applied-list" id="applied-list"></div>
+    <div class="section-title" style="font-size:20px;margin:28px 0 16px">Saved jobs</div>
+    <div class="applied-list" id="saved-list"></div>
+  </div>
+</div>
+
+<!-- APPLICATION MODAL -->
+<div class="modal-overlay" id="apply-modal" style="display:none" onclick="overlayClose(event)">
+  <div class="modal-box">
+    <div class="modal-head">
+      <div class="modal-head-top">
+        <div class="modal-job-info">
+          <div class="modal-job-logo" id="m-logo"></div>
+          <div><div class="modal-job-title" id="m-title"></div><div class="modal-job-co" id="m-co"></div></div>
+        </div>
+        <button class="modal-close" onclick="closeModal()">✕</button>
+      </div>
+      <div class="step-bar" id="step-bar"></div>
+    </div>
+    <div class="modal-body" id="step1">
+      <div class="row2">
+        <div class="mfield"><label>Full name <span class="req">*</span></label><input type="text" id="f-name" placeholder="Alex Johnson" oninput="clearErr('f-name','e-name')"/><div class="mfield-err" id="e-name">⚠ Full name is required.</div></div>
+        <div class="mfield"><label>Email address <span class="req">*</span></label><input type="email" id="f-email" placeholder="alex@example.com" oninput="clearErr('f-email','e-email')"/><div class="mfield-err" id="e-email">⚠ A valid email is required.</div></div>
+      </div>
+      <div class="row2">
+        <div class="mfield"><label>Phone number <span class="req">*</span></label><input type="tel" id="f-phone" placeholder="+1 555 000 0000" oninput="clearErr('f-phone','e-phone')"/><div class="mfield-err" id="e-phone">⚠ Phone number is required.</div></div>
+        <div class="mfield"><label>LinkedIn / Portfolio <span class="opt">(optional)</span></label><input type="url" id="f-link" placeholder="https://linkedin.com/in/you"/></div>
+      </div>
+    </div>
+    <div class="modal-body" id="step2" style="display:none">
+      <div class="mfield">
+        <label>Resume / CV <span class="req">*</span></label>
+        <div class="file-drop" id="resume-drop"><input type="file" id="f-resume" accept=".pdf,.doc,.docx" onchange="handleFile(this)"/><div class="fd-icon">📄</div><div class="fd-text"><b>Click to upload</b> or drag and drop</div><div class="fd-hint">PDF, DOC, DOCX — max 5 MB</div></div>
+        <div class="file-chosen" id="file-chosen" style="display:none"><span>📎 <span id="file-name"></span></span><button onclick="removeFile()">✕</button></div>
+        <div class="mfield-err" id="e-resume">⚠ Please upload your resume.</div>
+      </div>
+      <div class="mfield"><label>Years of experience <span class="req">*</span></label><select id="f-exp" onchange="clearErr('f-exp','e-exp')"><option value="">Select experience level</option><option value="0">Student / No experience</option><option value="1">Less than 1 year</option><option value="2">1–2 years</option><option value="3">3–5 years</option><option value="5">5–10 years</option><option value="10">10+ years</option></select><div class="mfield-err" id="e-exp">⚠ Please select your experience level.</div></div>
+      <div class="mfield">
+        <label>Skills <span class="req">*</span><span class="opt"> — add at least one</span></label>
+        <div class="skills-input-wrap"><input type="text" id="f-skill-input" placeholder="Type a skill and press Add…" onkeydown="if(event.key==='Enter'){event.preventDefault();addSkill()}"/><button class="skills-add-btn" onclick="addSkill()">+ Add</button></div>
+        <div class="skills-chips" id="skills-chips"></div>
+        <div class="mfield-err" id="e-skills">⚠ Add at least one skill.</div>
+      </div>
+    </div>
+    <div class="modal-body" id="step3" style="display:none">
+      <div style="background:var(--purple-light);border:1px solid var(--purple-mid);border-radius:12px;padding:16px 18px;margin-bottom:22px;font-size:13px;color:#5B21B6;line-height:1.7">💡 <b>Tip:</b> A strong cover letter explains why you're excited about this role and what makes you a great fit. Keep it concise — 2–3 paragraphs is ideal.</div>
+      <div class="mfield"><label>Cover letter <span class="opt">(optional)</span></label><textarea id="f-cover" rows="8" placeholder="Dear Hiring Team,&#10;&#10;I'm excited to apply for this position…"></textarea><div style="display:flex;justify-content:flex-end;margin-top:5px"><span id="cover-count" style="font-size:12px;color:var(--muted)">0 / 2000</span></div></div>
+      <div class="mfield"><label>How did you hear about us? <span class="opt">(optional)</span></label><select id="f-source"><option value="">Select an option</option><option value="LinkedIn">LinkedIn</option><option value="Indeed">Indeed</option><option value="Friend">Friend / referral</option><option value="Company website">Company website</option><option value="Other">Other</option></select></div>
+    </div>
+    <div class="modal-body" id="step-success" style="display:none">
+      <div class="success-screen"><div class="s-icon">🎉</div><h2>Application submitted!</h2><p>Your application has been sent successfully. The team will be in touch soon.</p><div class="success-detail" id="success-detail"></div><button class="btn btn-primary" onclick="closeModal()">Back to listings</button></div>
+    </div>
+    <div class="modal-foot" id="modal-foot">
+      <button class="btn btn-outline" id="btn-back" onclick="stepBack()" style="display:none">← Back</button>
+      <button class="btn btn-primary" id="btn-next" onclick="stepNext()">Continue →</button>
+    </div>
+  </div>
+</div>
+
+<!-- LOGOUT CONFIRM -->
+<div class="confirm-overlay" id="logout-confirm" style="display:none">
+  <div class="confirm-box">
+    <div class="confirm-icon">👋</div>
+    <div class="confirm-title">Sign out?</div>
+    <div class="confirm-sub">Your session will be cleared and all your account data will be removed from this device until you sign back in.</div>
+    <div class="confirm-actions">
+      <button class="btn btn-outline" onclick="cancelLogout()">Stay signed in</button>
+      <button class="btn btn-primary" onclick="confirmLogout()">Yes, sign out</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+</div>
+
+<script>
+const JOBS=[
+  {id:1,title:'Product Designer',company:'Luminary Studio',logo:'🎨',category:'Design',type:'Full-time',remote:'Remote',location:'Remote • USA',salary:'$85k–$110k',posted:'2 days ago',tags:['Figma','UX Research','Prototyping'],desc:'We\'re looking for a thoughtful Product Designer to shape user experiences across our flagship SaaS products.',requirements:['3+ years of product design experience','Proficiency in Figma and design systems','Strong portfolio with shipped products','Experience conducting user research'],responsibilities:['Define design direction for new features','Build and maintain a scalable component library','Run usability tests and synthesize insights','Partner with PMs to shape the product roadmap'],about:'Luminary Studio is a remote-first design software company building the next generation of creative tools.'},
+  {id:2,title:'Frontend Engineer',company:'Bloom Finance',logo:'💻',category:'Engineering',type:'Full-time',remote:'Hybrid',location:'Hybrid • NYC',salary:'$95k–$130k',posted:'1 day ago',tags:['React','TypeScript','CSS'],desc:'Join our front-end team to build beautiful, fast financial dashboards used by thousands of SMBs every day.',requirements:['3+ years with React and TypeScript','Deep understanding of web performance','Experience with RESTful APIs','Strong eye for design detail'],responsibilities:['Build responsive, accessible web applications','Collaborate with designers on pixel-perfect implementations','Write well-tested, maintainable code','Mentor junior engineers'],about:'Bloom Finance helps small businesses manage their cash flow with elegant, powerful software.'},
+  {id:3,title:'Growth Marketing Intern',company:'PetalAI',logo:'📣',category:'Marketing',type:'Internship',remote:'Remote',location:'Remote • Global',salary:'$2,000/mo',posted:'Today',tags:['SEO','Content','Analytics'],desc:'A 3-month internship where you\'ll own real growth experiments.',requirements:['Currently enrolled in Marketing/Business program','Familiarity with Google Analytics','Strong writing skills','Data-driven mindset'],responsibilities:['Run A/B tests on landing pages','Write SEO-optimized blog content','Analyze campaign performance weekly','Support social media scheduling'],about:'PetalAI is an AI startup building personalized learning tools for students worldwide.'},
+  {id:4,title:'Data Analyst',company:'Canopy Health',logo:'📊',category:'Data',type:'Full-time',remote:'On-site',location:'On-site • San Francisco',salary:'$80k–$105k',posted:'3 days ago',tags:['SQL','Python','Tableau'],desc:'Help us turn complex health data into actionable insights that improve patient outcomes.',requirements:['2+ years in data analytics','Strong SQL and Python skills','Experience with Tableau or Looker','Healthcare data experience a plus'],responsibilities:['Build dashboards for clinical and operations teams','Write and optimize complex SQL queries','Present findings to senior stakeholders','Identify trends in patient data'],about:'Canopy Health is a digital health company on a mission to make preventive care accessible to all.'},
+  {id:5,title:'Product Manager',company:'Starfield Labs',logo:'🧩',category:'Product',type:'Full-time',remote:'Hybrid',location:'Hybrid • Austin',salary:'$100k–$140k',posted:'5 days ago',tags:['Roadmapping','Agile','B2B'],desc:'Drive the strategy and execution for our enterprise platform used by Fortune 500 companies.',requirements:['4+ years in product management','Experience with B2B SaaS products','Strong analytical and communication skills','Technical background preferred'],responsibilities:['Own the product roadmap for core platform features','Gather and prioritize customer requirements','Work closely with engineering and design','Define and track key product metrics'],about:'Starfield Labs builds automation software that helps enterprise teams eliminate repetitive workflows.'},
+  {id:6,title:'UX Research Intern',company:'Luminary Studio',logo:'🔍',category:'Design',type:'Internship',remote:'Remote',location:'Remote • USA',salary:'$1,800/mo',posted:'2 days ago',tags:['User Research','Figma','Interviews'],desc:'Support our research team with user interviews, survey design, and synthesis sessions.',requirements:['Studying HCI, Psychology, or related field','Familiarity with research methods','Strong communication skills','Bonus: experience with Dovetail or Miro'],responsibilities:['Schedule and conduct 1:1 user interviews','Synthesize research findings into reports','Help create research repositories','Assist with usability testing'],about:'Luminary Studio is a remote-first design software company.'},
+  {id:7,title:'Machine Learning Engineer',company:'PetalAI',logo:'🤖',category:'Engineering',type:'Full-time',remote:'Remote',location:'Remote • USA/EU',salary:'$120k–$160k',posted:'Today',tags:['Python','PyTorch','LLMs'],desc:'Build and deploy the ML models that power our personalized learning experiences.',requirements:['3+ years ML engineering experience','Strong Python and PyTorch skills','Experience deploying models to production','Familiarity with LLMs and fine-tuning'],responsibilities:['Train, evaluate, and deploy ML models','Collaborate with product to define AI features','Build robust data pipelines','Monitor model performance in production'],about:'PetalAI is an AI startup building personalized learning tools for students worldwide.'},
+  {id:8,title:'Content Marketing Manager',company:'Bloom Finance',logo:'✍️',category:'Marketing',type:'Full-time',remote:'Hybrid',location:'Hybrid • NYC',salary:'$70k–$90k',posted:'4 days ago',tags:['Content Strategy','SEO','Copywriting'],desc:'Own our content strategy and build an audience of small business owners.',requirements:['3+ years in content marketing','Strong SEO knowledge','Experience with financial content preferred','Portfolio of long-form writing'],responsibilities:['Create editorial calendar and content strategy','Write and edit high-quality long-form content','Collaborate with design on visual assets','Analyze content performance and iterate'],about:'Bloom Finance helps small businesses manage their cash flow.'},
+  {id:9,title:'Backend Engineer',company:'Orion Cloud',logo:'⚙️',category:'Engineering',type:'Full-time',remote:'Remote',location:'Remote • USA',salary:'$110k–$150k',posted:'Today',tags:['Node.js','PostgreSQL','AWS'],desc:'Design and build scalable APIs and microservices that power our cloud infrastructure platform.',requirements:['4+ years backend engineering experience','Strong Node.js and PostgreSQL knowledge','Experience with AWS or GCP','Familiarity with Docker and Kubernetes'],responsibilities:['Build and maintain REST and GraphQL APIs','Design database schemas and optimize queries','Participate in on-call rotation','Code review and mentoring'],about:'Orion Cloud makes cloud infrastructure simple for engineering teams of all sizes.'},
+  {id:10,title:'iOS Developer Intern',company:'Starfield Labs',logo:'📱',category:'Engineering',type:'Internship',remote:'Hybrid',location:'Hybrid • Austin',salary:'$2,500/mo',posted:'1 day ago',tags:['Swift','SwiftUI','Xcode'],desc:'Join our mobile team for a summer internship building features in our enterprise iOS app.',requirements:['Experience with Swift and SwiftUI','Enrolled in CS or related degree','Side project or app in App Store a plus','Familiarity with Git'],responsibilities:['Build and test new iOS features','Fix bugs reported by QA and customers','Write unit tests for your code','Attend sprint planning and stand-ups'],about:'Starfield Labs builds automation software that helps enterprise teams eliminate repetitive workflows.'},
+  {id:11,title:'Financial Analyst',company:'Bloom Finance',logo:'💰',category:'Finance',type:'Full-time',remote:'On-site',location:'On-site • NYC',salary:'$75k–$100k',posted:'3 days ago',tags:['Excel','Financial Modeling','Python'],desc:'Analyze financial data and produce reports that guide strategic decisions.',requirements:['2+ years financial analysis experience','Advanced Excel and financial modeling skills','Python or SQL a strong plus','CFA Level 1 preferred'],responsibilities:['Build and maintain financial models','Create monthly performance reports','Work with FP&A on budget planning','Present insights to executive team'],about:'Bloom Finance helps small businesses manage their cash flow.'},
+  {id:12,title:'Finance & Operations Intern',company:'Canopy Health',logo:'📋',category:'Finance',type:'Internship',remote:'Hybrid',location:'Hybrid • San Francisco',salary:'$1,600/mo',posted:'2 days ago',tags:['Excel','Financial Reporting','Ops'],desc:'Support our finance and operations team with reporting, reconciliation, and process improvement.',requirements:['Pursuing a Finance or Business degree','Strong Excel skills','Detail-oriented with good communication','Experience with accounting software a plus'],responsibilities:['Assist with month-end close process','Reconcile vendor invoices','Build dashboards in Google Sheets','Help document internal processes'],about:'Canopy Health is a digital health company.'},
+  {id:13,title:'HR Generalist',company:'Orion Cloud',logo:'🤝',category:'HR',type:'Full-time',remote:'Hybrid',location:'Hybrid • Remote-first',salary:'$65k–$85k',posted:'6 days ago',tags:['Recruiting','HRIS','People Ops'],desc:'Own the full employee lifecycle from recruiting to offboarding for our fast-growing engineering team.',requirements:['2+ years in HR or people ops','Experience with an HRIS (Rippling, BambooHR)','Strong interpersonal and organizational skills','Tech startup experience preferred'],responsibilities:['Manage recruiting pipelines for engineering roles','Run onboarding and offboarding processes','Handle employee relations questions','Partner with managers on performance cycles'],about:'Orion Cloud makes cloud infrastructure simple for engineering teams.'},
+  {id:14,title:'HR & Recruiting Intern',company:'PetalAI',logo:'🌱',category:'HR',type:'Internship',remote:'Remote',location:'Remote • Global',salary:'$1,400/mo',posted:'Today',tags:['Recruiting','Sourcing','LinkedIn'],desc:'Help us grow our team by sourcing candidates, scheduling interviews, and supporting people programs.',requirements:['Interest in HR or talent acquisition','Strong written communication','Comfortable with spreadsheets and tools','Proactive and organized'],responsibilities:['Source candidates on LinkedIn','Schedule interviews and manage calendars','Update candidate tracking spreadsheet','Assist with employee engagement surveys'],about:'PetalAI is an AI startup building personalized learning tools.'},
+  {id:15,title:'Data Science Intern',company:'Canopy Health',logo:'🧬',category:'Data',type:'Internship',remote:'Hybrid',location:'Hybrid • San Francisco',salary:'$2,200/mo',posted:'1 day ago',tags:['Python','Pandas','Machine Learning'],desc:'Apply machine learning to real patient datasets to build predictive models that improve care delivery.',requirements:['Enrolled in Data Science, Statistics, or CS program','Proficiency in Python and Pandas','Familiarity with scikit-learn or PyTorch','Strong analytical and communication skills'],responsibilities:['Clean and explore large health datasets','Build and evaluate predictive models','Present findings to clinical stakeholders','Document methods in internal wiki'],about:'Canopy Health is a digital health company.'},
+  {id:16,title:'Brand Designer',company:'Starfield Labs',logo:'🖌️',category:'Design',type:'Full-time',remote:'Remote',location:'Remote • USA',salary:'$80k–$105k',posted:'4 days ago',tags:['Branding','Illustration','After Effects'],desc:'Define and evolve the visual identity of Starfield Labs across product, marketing, and events.',requirements:['3+ years of brand or visual design experience','Strong portfolio spanning digital and print','Motion design skills a plus','Experience in a B2B environment'],responsibilities:['Maintain and evolve the brand guidelines','Create assets for marketing campaigns','Collaborate with product design on brand expression','Design conference booth and swag'],about:'Starfield Labs builds automation software.'},
+  {id:17,title:'DevOps Engineer',company:'Orion Cloud',logo:'🔧',category:'Engineering',type:'Full-time',remote:'Remote',location:'Remote • USA/EU',salary:'$115k–$145k',posted:'Today',tags:['Kubernetes','Terraform','CI/CD'],desc:'Build and maintain the infrastructure that keeps our platform running reliably at scale.',requirements:['3+ years in DevOps or SRE role','Strong Kubernetes and Terraform skills','Experience with CI/CD pipelines','Monitoring tools: Datadog, Grafana'],responsibilities:['Manage cloud infrastructure on AWS','Build CI/CD pipelines for engineering teams','Respond to and resolve incidents','Drive reliability and observability improvements'],about:'Orion Cloud makes cloud infrastructure simple.'},
+  {id:18,title:'Product Marketing Intern',company:'Luminary Studio',logo:'🌟',category:'Marketing',type:'Internship',remote:'Remote',location:'Remote • USA',salary:'$1,900/mo',posted:'3 days ago',tags:['PMM','Positioning','Launch'],desc:'Work alongside our Product Marketing team on go-to-market launches, messaging, and competitive research.',requirements:['Pursuing a Marketing, Business, or Communications degree','Strong writing and research skills','Interest in SaaS and design tools','Organized with attention to detail'],responsibilities:['Research competitor positioning and messaging','Draft website copy for new features','Help coordinate product launch timelines','Create sales enablement one-pagers'],about:'Luminary Studio is a remote-first design software company.'},
+];
+
+// ── SESSION STATE ──
+// Single source of truth. Never persisted in a global variable between users.
+let S = freshState();
+
+function freshState() {
+  return {
+    user: null,
+    applied: [],
+    saved: [],
+    currentJob: null,
+    currentStep: 1,
+    skills: [],
+    resumeFile: null,
+    filter: { search:'', type:'', remote:'', cat:'', quickTag:'' }
+  };
+}
+
+// ── FULL UI WIPE ──
+function wipeUI() {
+  // Close any open modal immediately
+  document.getElementById('apply-modal').style.display = 'none';
+  document.getElementById('logout-confirm').style.display = 'none';
+
+  // Clear all form fields in login page
+  document.getElementById('login-email').value = '';
+  document.getElementById('login-pass').value = '';
+  document.getElementById('login-err').style.display = 'none';
+  document.getElementById('login-success').style.display = 'none';
+
+  // Clear signup form
+  ['reg-name','reg-email','reg-pass'].forEach(id => document.getElementById(id).value = '');
+  evalPw('');
+  document.getElementById('reg-err').style.display = 'none';
+
+  // Clear search / filters
+  document.getElementById('search-input').value = '';
+  document.getElementById('filter-type').value = '';
+  document.getElementById('filter-remote').value = '';
+  document.getElementById('filter-cat').value = '';
+
+  // Remove all active quick-filter tags
+  document.querySelectorAll('.tag').forEach(t => t.classList.remove('active'));
+
+  // Empty jobs grid of any applied/saved badges (will re-render anonymously)
+  document.getElementById('jobs-grid').innerHTML = '';
+  document.getElementById('jobs-count').textContent = '';
+
+  // Clear detail page
+  document.getElementById('detail-content').innerHTML = '';
+
+  // Clear dashboard content
+  document.getElementById('dash-sub').textContent = '';
+  document.getElementById('stat-applied').textContent = '0';
+  document.getElementById('stat-saved').textContent = '0';
+  document.getElementById('stat-total').textContent = '0';
+  document.getElementById('applied-list').innerHTML = '';
+  document.getElementById('saved-list').innerHTML = '';
+
+  // Clear nav user elements
+  document.getElementById('nav-mid').innerHTML = '';
+  document.getElementById('nav-actions').innerHTML = '';
+}
+
+// ── NAV ──
+function renderNav() {
+  const mid = document.getElementById('nav-mid');
+  const acts = document.getElementById('nav-actions');
+  if (!S.user) {
+    mid.innerHTML = '';
+    acts.innerHTML = `<button class="btn btn-outline btn-sm" onclick="goPage('page-login')">Sign in</button><button class="btn btn-primary btn-sm" onclick="goPage('page-signup')">Sign up</button>`;
+    return;
+  }
+  mid.innerHTML = `<span class="nav-link" onclick="goPage('page-home')">Browse jobs</span><span class="nav-link" onclick="goPage('page-dashboard')">Dashboard</span>`;
+  acts.innerHTML = `<div class="user-chip">🌸 ${S.user.name.split(' ')[0]}</div><button class="btn btn-outline btn-sm" onclick="askLogout()">Sign out</button>`;
+}
+
+function goPage(id) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  renderNav();
+  if (id === 'page-home') { S.filter = { search:'', type:'', remote:'', cat:'', quickTag:'' }; renderJobs(); }
+  if (id === 'page-dashboard') renderDash();
+  window.scrollTo(0, 0);
+}
+
+// ── LOGOUT FLOW ──
+function askLogout() {
+  document.getElementById('logout-confirm').style.display = 'flex';
+}
+function cancelLogout() {
+  document.getElementById('logout-confirm').style.display = 'none';
+}
+function confirmLogout() {
+  // 1. Wipe the entire in-memory state
+  S = freshState();
+
+  // 2. Wipe every visible UI element
+  wipeUI();
+
+  // 3. Navigate to login (clean slate)
+  goPage('page-login');
+
+  showToast('You\'ve been signed out. See you soon! 🌸');
+}
+
+// ── AUTH ──
+function toggleVis(id, btn) { const i = document.getElementById(id); i.type = i.type === 'password' ? 'text' : 'password'; btn.textContent = i.type === 'password' ? '👁' : '🙈'; }
+function evalPw(pw) {
+  const hasLen = pw.length >= 8, hasUpper = /[A-Z]/.test(pw), hasNum = /[0-9]/.test(pw), hasSpec = /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?`~]/.test(pw);
+  ['r-len','r-upper','r-num','r-spec'].forEach((id,i) => { ([hasLen,hasUpper,hasNum,hasSpec][i]) ? document.getElementById(id).classList.add('ok') : document.getElementById(id).classList.remove('ok'); });
+  const score = [hasLen,hasUpper,hasNum,hasSpec].filter(Boolean).length;
+  const bars = ['b1','b2','b3','b4'].map(id => document.getElementById(id));
+  const label = document.getElementById('pw-label'), btn = document.getElementById('signup-btn');
+  bars.forEach(b => b.style.background = '#E5E7EB');
+  if (!pw.length) { label.textContent = ''; btn.disabled = true; return; }
+  const cfg = [null, [1,'var(--weak)','Weak password'], [2,'var(--fair)','Fair password'], [3,'var(--good)','Good password'], [4,'var(--strong)','Strong password ✓']];
+  const c = cfg[score];
+  for (let i = 0; i < score; i++) bars[i].style.background = c[1];
+  label.textContent = c[2]; label.style.color = c[1];
+  btn.disabled = score < 4;
+}
+function showBanner(el, msg) { el.textContent = '⚠ ' + msg; el.style.display = 'flex'; }
+function doLogin() {
+  const e = document.getElementById('login-email').value.trim();
+  const p = document.getElementById('login-pass').value;
+  const err = document.getElementById('login-err');
+  if (!e || !p) { showBanner(err, 'Please fill in all fields.'); return; }
+  const users = JSON.parse(localStorage.getItem('bj_users') || '[]');
+  const found = users.find(u => u.email === e && u.password === p);
+  if (!found) { showBanner(err, 'Incorrect email or password.'); return; }
+  err.style.display = 'none';
+  loginUser(found);
+}
+function doSignup() {
+  const n = document.getElementById('reg-name').value.trim();
+  const e = document.getElementById('reg-email').value.trim();
+  const p = document.getElementById('reg-pass').value;
+  const err = document.getElementById('reg-err');
+  if (!n || !e || !p) { showBanner(err, 'Please fill in all fields.'); return; }
+  const users = JSON.parse(localStorage.getItem('bj_users') || '[]');
+  if (users.find(u => u.email === e)) { showBanner(err, 'An account with this email already exists.'); return; }
+  users.push({ name: n, email: e, password: p });
+  localStorage.setItem('bj_users', JSON.stringify(users));
+  ['reg-name','reg-email','reg-pass'].forEach(id => document.getElementById(id).value = '');
+  evalPw('');
+  document.getElementById('login-email').value = e;
+  document.getElementById('login-success').style.display = 'flex';
+  err.style.display = 'none';
+  goPage('page-login');
+}
+function loginUser(u) {
+  // Load only THIS user's persisted data into a fresh state
+  S = freshState();
+  S.user = u;
+  S.applied = JSON.parse(localStorage.getItem('bj_applied_' + u.email) || '[]');
+  S.saved   = JSON.parse(localStorage.getItem('bj_saved_'   + u.email) || '[]');
+  document.getElementById('login-success').style.display = 'none';
+  document.getElementById('login-err').style.display = 'none';
+  goPage('page-home');
+}
+function saveState() {
+  if (!S.user) return;
+  localStorage.setItem('bj_applied_' + S.user.email, JSON.stringify(S.applied));
+  localStorage.setItem('bj_saved_'   + S.user.email, JSON.stringify(S.saved));
+}
+
+// ── JOBS ──
+function filterJobs() {
+  S.filter.search = document.getElementById('search-input').value.toLowerCase();
+  S.filter.type   = document.getElementById('filter-type').value;
+  S.filter.remote = document.getElementById('filter-remote').value;
+  S.filter.cat    = document.getElementById('filter-cat').value;
+  renderJobs();
+}
+function quickFilter(el, tag) {
+  const a = el.classList.contains('active');
+  document.querySelectorAll('.tag').forEach(t => t.classList.remove('active'));
+  if (!a) { el.classList.add('active'); S.filter.quickTag = tag; } else { S.filter.quickTag = ''; }
+  renderJobs();
+}
+function getFiltered() {
+  return JOBS.filter(j => {
+    const s = S.filter.search;
+    if (s && !j.title.toLowerCase().includes(s) && !j.company.toLowerCase().includes(s) && !j.tags.some(t => t.toLowerCase().includes(s))) return false;
+    if (S.filter.type   && j.type     !== S.filter.type)   return false;
+    if (S.filter.remote && j.remote   !== S.filter.remote) return false;
+    if (S.filter.cat    && j.category !== S.filter.cat)    return false;
+    if (S.filter.quickTag && j.category !== S.filter.quickTag) return false;
+    return true;
+  });
+}
+function renderJobs() {
+  const jobs = getFiltered();
+  document.getElementById('jobs-count').textContent = `${jobs.length} opportunit${jobs.length === 1 ? 'y' : 'ies'} found`;
+  const grid = document.getElementById('jobs-grid');
+  if (!jobs.length) { grid.innerHTML = `<div class="empty" style="grid-column:1/-1"><div class="empty-icon">🌿</div><div>No roles match your search</div><div style="font-size:13px;margin-top:6px">Try adjusting your filters</div></div>`; return; }
+  grid.innerHTML = jobs.map(j => {
+    // Only show user-specific badges when a user is logged in
+    const isSaved   = S.user && S.saved.includes(j.id);
+    const isApplied = S.user && S.applied.some(a => a.id === j.id);
+    return `<div class="job-card" onclick="viewJob(${j.id})">
+      ${S.user ? `<button class="save-btn" onclick="event.stopPropagation();toggleSave(${j.id})">${isSaved ? '🩷' : '🤍'}</button>` : ''}
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:14px;padding-right:${S.user ? '32px' : '0'}">
+        <div><div class="job-title">${j.title}</div><div class="job-company">${j.company}</div></div>
+        <div class="job-logo">${j.logo}</div>
+      </div>
+      <div class="job-meta"><span>📍 ${j.location}</span><span>💰 ${j.salary}</span><span>🕐 ${j.posted}</span></div>
+      <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:6px;margin-top:4px">
+        <div style="display:flex;gap:6px">${[j.type,j.remote].map(t=>`<span class="badge ${t==='Internship'?'badge-teal':t==='Full-time'?'badge-purple':t==='Remote'?'badge-pink':'badge-amber'}">${t}</span>`).join('')}</div>
+        ${isApplied ? `<span class="badge badge-pink">Applied ✓</span>` : ''}
+      </div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:12px">${j.tags.map(t=>`<span style="background:var(--pink-light);color:#9D174D;padding:4px 10px;border-radius:50px;font-size:11px;font-weight:500">${t}</span>`).join('')}</div>
+    </div>`;
+  }).join('');
+}
+function toggleSave(id) {
+  if (!S.user) { goPage('page-login'); return; }
+  const i = S.saved.indexOf(id);
+  if (i === -1) { S.saved.push(id); showToast('Saved! 💾'); } else { S.saved.splice(i, 1); showToast('Removed from saved'); }
+  saveState(); renderJobs();
+}
+function viewJob(id) {
+  if (!S.user) { goPage('page-login'); return; }
+  S.currentJob = JOBS.find(j => j.id === id);
+  renderDetail(); goPage('page-detail');
+}
+function renderDetail() {
+  const j = S.currentJob; if (!j) return;
+  const isApplied = S.applied.some(a => a.id === j.id);
+  const isSaved   = S.saved.includes(j.id);
+  document.getElementById('detail-content').innerHTML = `
+    <div class="detail-header">
+      <div style="display:flex;align-items:center;gap:16px">
+        <div class="job-logo" style="width:56px;height:56px;font-size:28px">${j.logo}</div>
+        <div><div class="detail-title">${j.title}</div><div style="color:var(--muted);font-size:15px">${j.company} • ${j.location}</div></div>
+      </div>
+      <div class="job-meta" style="margin-top:14px"><span>💰 ${j.salary}</span><span>🕐 Posted ${j.posted}</span><span class="badge badge-purple">${j.type}</span><span class="badge badge-teal">${j.remote}</span></div>
+      <div class="detail-actions">
+        ${isApplied ? `<button class="btn" style="background:#F0FDF4;color:#065F46;border:1.5px solid #6EE7B7;border-radius:50px;cursor:default">✓ Application submitted</button>` : `<button class="btn btn-primary" onclick="openApply(${j.id})">Apply now</button>`}
+        <button class="btn btn-outline" onclick="toggleSaveDetail(${j.id})">${isSaved ? '🩷 Saved' : '🤍 Save'}</button>
+      </div>
+    </div>
+    <div class="detail-body">
+      <div class="detail-main">
+        <div class="desc-h">About this role</div><p class="desc-p">${j.desc}</p>
+        <div class="desc-h">What you'll do</div><ul class="desc-ul">${j.responsibilities.map(r=>`<li>${r}</li>`).join('')}</ul>
+        <div class="desc-h">What we're looking for</div><ul class="desc-ul">${j.requirements.map(r=>`<li>${r}</li>`).join('')}</ul>
+        <div class="desc-h">About ${j.company}</div><p class="desc-p">${j.about}</p>
+      </div>
+      <div class="detail-side">
+        <div class="side-card"><h4>Job details</h4>
+          <div class="side-row"><span>Type</span><span>${j.type}</span></div>
+          <div class="side-row"><span>Work style</span><span>${j.remote}</span></div>
+          <div class="side-row"><span>Salary</span><span>${j.salary}</span></div>
+          <div class="side-row"><span>Category</span><span>${j.category}</span></div>
+          <div class="side-row"><span>Posted</span><span>${j.posted}</span></div>
+        </div>
+        <div class="side-card"><h4>Skills</h4><div style="display:flex;flex-wrap:wrap;gap:6px">${j.tags.map(t=>`<span style="background:var(--pink-light);color:#9D174D;padding:5px 12px;border-radius:50px;font-size:12px;font-weight:500">${t}</span>`).join('')}</div></div>
+      </div>
+    </div>`;
+}
+function toggleSaveDetail(id) { toggleSave(id); renderDetail(); }
+
+// ── APPLICATION MODAL ──
+const STEPS = [{label:'Personal info'},{label:'Experience'},{label:'Cover letter'}];
+function openApply(id) {
+  S.currentJob = JOBS.find(j => j.id === id) || S.currentJob;
+  S.currentStep = 1; S.skills = []; S.resumeFile = null;
+  document.getElementById('f-name').value  = S.user ? S.user.name  : '';
+  document.getElementById('f-email').value = S.user ? S.user.email : '';
+  ['f-phone','f-link','f-cover','f-source'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('f-exp').value = '';
+  document.getElementById('f-skill-input').value = '';
+  document.getElementById('cover-count').textContent = '0 / 2000';
+  document.getElementById('file-chosen').style.display = 'none';
+  document.getElementById('resume-drop').style.display = 'block';
+  document.getElementById('resume-drop').classList.remove('err-border');
+  document.getElementById('f-resume').value = '';
+  renderSkillChips(); clearAllErrs();
+  document.getElementById('m-logo').textContent  = S.currentJob.logo;
+  document.getElementById('m-title').textContent = S.currentJob.title;
+  document.getElementById('m-co').textContent    = S.currentJob.company + ' • ' + S.currentJob.location;
+  renderStepBar(); showStep(1);
+  document.getElementById('apply-modal').style.display = 'flex';
+  document.getElementById('f-cover').oninput = function() { document.getElementById('cover-count').textContent = this.value.length + ' / 2000'; if (this.value.length > 2000) this.value = this.value.slice(0, 2000); };
+  const drop = document.getElementById('resume-drop');
+  drop.ondragover = e => { e.preventDefault(); drop.classList.add('drag'); };
+  drop.ondragleave = () => drop.classList.remove('drag');
+  drop.ondrop = e => { e.preventDefault(); drop.classList.remove('drag'); const f = e.dataTransfer.files[0]; if (f) setFile(f); };
+}
+function overlayClose(e) { if (e.target === document.getElementById('apply-modal')) closeModal(); }
+function closeModal() {
+  document.getElementById('apply-modal').style.display = 'none';
+  if (document.getElementById('page-detail').classList.contains('active')) renderDetail();
+  if (document.getElementById('page-home').classList.contains('active')) renderJobs();
+}
+function renderStepBar() {
+  document.getElementById('step-bar').innerHTML = STEPS.map((s,i) => {
+    const n = i+1, done = n < S.currentStep, active = n === S.currentStep;
+    const cc = done ? 'done' : active ? 'active' : 'idle';
+    const seg = i < STEPS.length-1 ? `<div class="step-line ${done?'done':''}"></div>` : '';
+    return `<div class="step-item"><div class="step-circle ${cc}">${done?'✓':n}</div><span class="step-label ${active?'active':''}">${s.label}</span></div>${seg}`;
+  }).join('');
+}
+function showStep(n) {
+  ['step1','step2','step3','step-success'].forEach(id => document.getElementById(id).style.display='none');
+  document.getElementById(n===4?'step-success':`step${n}`).style.display='block';
+  const foot=document.getElementById('modal-foot'), back=document.getElementById('btn-back'), next=document.getElementById('btn-next');
+  if (n===4){foot.style.display='none';return;}
+  foot.style.display='flex'; back.style.display=n>1?'inline-flex':'none';
+  next.textContent=n===3?'Submit application ✓':'Continue →';
+}
+function stepNext() {
+  if (S.currentStep===1 && !validateStep1()) return;
+  if (S.currentStep===2 && !validateStep2()) return;
+  if (S.currentStep===3) { submitApp(); return; }
+  S.currentStep++; renderStepBar(); showStep(S.currentStep);
+}
+function stepBack() { if (S.currentStep>1){S.currentStep--;renderStepBar();showStep(S.currentStep);} }
+function setErr(inputId,errId,msg){const inp=document.getElementById(inputId),err=document.getElementById(errId);if(inp)inp.classList.add('err');if(err){err.textContent='⚠ '+msg;err.classList.add('show');}}
+function clearErr(inputId,errId){const inp=document.getElementById(inputId),err=document.getElementById(errId);if(inp)inp.classList.remove('err');if(err)err.classList.remove('show');}
+function clearAllErrs(){['f-name','f-email','f-phone','f-exp'].forEach(id=>{const el=document.getElementById(id);if(el)el.classList.remove('err');});['e-name','e-email','e-phone','e-exp','e-skills','e-resume'].forEach(id=>{const el=document.getElementById(id);if(el)el.classList.remove('show');});document.getElementById('resume-drop').classList.remove('err-border');}
+function validateStep1(){
+  let ok=true;
+  clearErr('f-name','e-name');clearErr('f-email','e-email');clearErr('f-phone','e-phone');
+  if(!document.getElementById('f-name').value.trim()){setErr('f-name','e-name','Full name is required.');ok=false;}
+  const em=document.getElementById('f-email').value.trim();
+  if(!em||!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(em)){setErr('f-email','e-email','A valid email address is required.');ok=false;}
+  const ph=document.getElementById('f-phone').value.trim();
+  if(!ph||ph.length<6){setErr('f-phone','e-phone','A valid phone number is required.');ok=false;}
+  return ok;
+}
+function validateStep2(){
+  let ok=true;
+  clearErr('f-exp','e-exp');
+  document.getElementById('e-skills').classList.remove('show');
+  document.getElementById('e-resume').classList.remove('show');
+  document.getElementById('resume-drop').classList.remove('err-border');
+  if(!S.resumeFile){document.getElementById('e-resume').textContent='⚠ Please upload your resume.';document.getElementById('e-resume').classList.add('show');document.getElementById('resume-drop').classList.add('err-border');ok=false;}
+  if(!document.getElementById('f-exp').value){setErr('f-exp','e-exp','Please select your experience level.');ok=false;}
+  if(S.skills.length===0){document.getElementById('e-skills').textContent='⚠ Add at least one skill.';document.getElementById('e-skills').classList.add('show');document.getElementById('f-skill-input').classList.add('err');ok=false;}
+  return ok;
+}
+function handleFile(input){if(input.files[0])setFile(input.files[0]);}
+function setFile(f){
+  const allowed=['application/pdf','application/msword','application/vnd.openxmlformats-officedocument.wordprocessingml.document'];
+  if(!allowed.includes(f.type)&&!f.name.match(/\.(pdf|doc|docx)$/i)){showToast('Only PDF, DOC, or DOCX files are accepted.');return;}
+  if(f.size>5*1024*1024){showToast('File must be under 5 MB.');return;}
+  S.resumeFile=f;
+  document.getElementById('file-name').textContent=f.name;
+  document.getElementById('file-chosen').style.display='flex';
+  document.getElementById('resume-drop').style.display='none';
+  document.getElementById('e-resume').classList.remove('show');
+  document.getElementById('resume-drop').classList.remove('err-border');
+}
+function removeFile(){S.resumeFile=null;document.getElementById('file-chosen').style.display='none';document.getElementById('resume-drop').style.display='block';document.getElementById('f-resume').value='';}
+function addSkill(){
+  const inp=document.getElementById('f-skill-input');
+  const val=inp.value.trim();
+  if(!val)return;
+  if(S.skills.includes(val)){showToast('Skill already added.');return;}
+  if(S.skills.length>=12){showToast('Maximum 12 skills.');return;}
+  S.skills.push(val);inp.value='';
+  inp.classList.remove('err');document.getElementById('e-skills').classList.remove('show');
+  renderSkillChips();
+}
+function removeSkill(s){S.skills=S.skills.filter(x=>x!==s);renderSkillChips();}
+function renderSkillChips(){document.getElementById('skills-chips').innerHTML=S.skills.map(s=>`<div class="skill-chip">${s}<button onclick="removeSkill('${s.replace(/'/g,"\\'")}')" title="Remove">×</button></div>`).join('');}
+function submitApp(){
+  const expMap={'0':'Student / No experience','1':'Less than 1 year','2':'1–2 years','3':'3–5 years','5':'5–10 years','10':'10+ years'};
+  const appData={id:S.currentJob.id,appliedAt:new Date().toLocaleDateString('en-US',{month:'short',day:'numeric'}),status:'Applied',applicant:{name:document.getElementById('f-name').value.trim(),email:document.getElementById('f-email').value.trim(),phone:document.getElementById('f-phone').value.trim(),experience:expMap[document.getElementById('f-exp').value]||'',skills:S.skills.join(', '),resume:S.resumeFile?S.resumeFile.name:''}};
+  if(!S.applied.some(a=>a.id===S.currentJob.id))S.applied.push(appData);
+  saveState();
+  document.getElementById('success-detail').innerHTML=`
+    <div class="sd-row"><span>Role</span><span>${S.currentJob.title}</span></div>
+    <div class="sd-row"><span>Company</span><span>${S.currentJob.company}</span></div>
+    <div class="sd-row"><span>Applicant</span><span>${appData.applicant.name}</span></div>
+    <div class="sd-row"><span>Resume</span><span>${appData.applicant.resume}</span></div>
+    <div class="sd-row"><span>Experience</span><span>${appData.applicant.experience}</span></div>
+    <div class="sd-row"><span>Skills</span><span>${appData.applicant.skills}</span></div>
+    <div class="sd-row"><span>Submitted</span><span>${appData.appliedAt}</span></div>`;
+  S.currentStep=4;renderStepBar();showStep(4);
+}
+
+// ── DASHBOARD ──
+function renderDash() {
+  if (!S.user) return;
+  document.getElementById('dash-sub').textContent = `Hello, ${S.user.name}! Here's your activity overview.`;
+  document.getElementById('stat-applied').textContent = S.applied.length;
+  document.getElementById('stat-saved').textContent   = S.saved.length;
+  document.getElementById('stat-total').textContent   = JOBS.length;
+  const aList=document.getElementById('applied-list'), sList=document.getElementById('saved-list');
+  if (!S.applied.length) {
+    aList.innerHTML=`<div class="empty"><div class="empty-icon">📭</div><div>No applications yet</div><a onclick="goPage('page-home')" style="color:var(--purple);cursor:pointer;font-size:14px">Browse jobs →</a></div>`;
+  } else {
+    aList.innerHTML=S.applied.map(a=>{const j=JOBS.find(x=>x.id===a.id);if(!j)return'';return`<div class="applied-item" onclick="viewJob(${j.id})"><div class="job-logo">${j.logo}</div><div style="flex:1"><div style="font-weight:600;font-size:15px">${j.title}</div><div style="color:var(--muted);font-size:13px">${j.company} • Applied ${a.appliedAt}</div>${a.applicant?`<div style="font-size:12px;color:var(--muted);margin-top:3px">Skills: ${a.applicant.skills}</div>`:''}</div><span class="status-pill status-applied">Applied</span></div>`;}).join('');
+  }
+  if (!S.saved.length) {
+    sList.innerHTML=`<div class="empty"><div class="empty-icon">🔖</div><div>No saved jobs yet</div><a onclick="goPage('page-home')" style="color:var(--purple);cursor:pointer;font-size:14px">Browse jobs →</a></div>`;
+  } else {
+    sList.innerHTML=S.saved.map(id=>{const j=JOBS.find(x=>x.id===id);if(!j)return'';return`<div class="applied-item" onclick="viewJob(${j.id})"><div class="job-logo">${j.logo}</div><div style="flex:1"><div style="font-weight:600;font-size:15px">${j.title}</div><div style="color:var(--muted);font-size:13px">${j.company} • ${j.location}</div></div><span class="status-pill status-saved">Saved</span></div>`;}).join('');
+  }
+}
+
+let toastTimeout;
+function showToast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');clearTimeout(toastTimeout);toastTimeout=setTimeout(()=>t.classList.remove('show'),2800);}
+
+goPage('page-login');
+</script>
+</body>
+</html>
