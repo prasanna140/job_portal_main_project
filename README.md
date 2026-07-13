@@ -95,10 +95,6 @@ BloomJobs/
 │   ├── images/
 │   ├── logos/
 │   └── fonts/
-│
-└── docs/
-    ├── screenshots/
-    └── project-report.pdf
 
 ### Architecture notes
 
