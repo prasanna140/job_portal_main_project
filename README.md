@@ -119,7 +119,7 @@ BloomJobs/
   devices or browsers.
 
 ## Screenshots
-
+![image alt](https://github.com/prasanna140/job_portal_main_project/blob/41676ae49f7e4ea596eb2f920ccbde9ff3aa12b6/job_portal_showcases.png)
 
 ## Future Improvements
 
